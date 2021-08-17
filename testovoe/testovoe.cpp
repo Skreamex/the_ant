@@ -85,7 +85,7 @@ public :
         m_X = x;
         m_Y = y;
         m_Visited.clear();
-        m_Visited.push_back({ x,y, true });
+        m_Visited.push_back({ x, y, true });
     }
 
     bool MoveLeft(std::queue<pt>& new_points) {
@@ -139,7 +139,7 @@ public :
     void Move(int x, int y) {
        
         std::queue<pt> start_path;
-        DoMovement(1000, 1000, start_path);
+        DoMovement(x, y, start_path);
 
         while (!start_path.empty()) {
             m_Visited.push_back(start_path.front());
