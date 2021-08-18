@@ -3,19 +3,26 @@
 #include <vector>
 #include <queue>
 #include <deque>
-#define charToInt(c) (c-'0')
+#include <unordered_map>
+#include <tuple>
 
-int Sum(const char* s) {
-    int value = 0;
-    int len = strlen(s);
-    for (int i = 0; i < len; i++) {
-        if (isdigit(s[i]))
-            value += charToInt(s[i]);
+
+int _i_sum(int n) {
+
+    if (!n) return 0;
+
+    if (n < 0) n = -n;
+
+    int sum = 0;
+    int m;
+    while (n > 0)
+    {
+        m = n % 10;
+        sum = sum + m;
+        n = n / 10;
     }
-
-    return value;
+    return sum;
 }
-
 
 //for debug output purposes
 int unscanned = 0;
@@ -25,7 +32,44 @@ int total_size = 0;
 
 struct pt {
     int x, y;
-    bool resimulated;
+};
+
+typedef std::tuple<int, int> key_t;
+
+
+uint32_t hash(PVOID value) {
+    uint32_t crc = ~0;
+
+    for (int i = 0; i < 8; i++) {
+        crc ^= reinterpret_cast<byte*>(value)[i];
+        for (uint8_t j = 0; j < 8; j++)
+            crc = ((crc & 1)
+                ? (crc >> 1) ^ 0xEDB88320
+                : (crc >> 1));
+
+    }
+    return crc;
+}
+
+
+struct key_hash : public std::unary_function<key_t, std::size_t>
+{
+    std::size_t operator()(const key_t& k) const
+    {
+        int x = std::get<0>(k);
+        int y = std::get<1>(k);
+
+        std::vector<int> nums;
+
+        nums.push_back(x);
+        nums.push_back(y);
+
+        ULONG64 _h = (*(ULONG64*)(nums.data())) ;
+
+        nums.clear();
+
+        return hash(&_h);
+    }
 };
 
 
@@ -33,18 +77,29 @@ class C_Ant {
     int m_X;
     int m_Y;
 
-    std::vector<pt> m_Visited;
+    std::unordered_map<key_t, bool, key_hash> m_Visited;
 
-    bool Visited(const int x, const int y) {
-        for (auto& point : m_Visited) {
+    bool Visited(int x, int y) {
 
-            if (x == point.x && y == point.y) {
-                return true;
-            }
+        //auto entry = m_Visited.find( std::make_tuple(x, y));
+
+        auto entry = m_Visited.find(std::make_tuple(x, y));
+
+        if (entry != m_Visited.end()) {
+
+         //   printf("Visited  %d %d\n", x, y);
+         //   printf("Visited with %d %d\n\n", std::get<0>(entry->first), std::get<1>(entry->first));
+
+           // system("pause");
+
+            return true;
+
         }
 
         return false;
     }
+
+    
 
     bool ValidateStep(int new_x, int new_y, std::queue<pt> & new_points) {
 
@@ -57,23 +112,15 @@ class C_Ant {
             return true;
         }
 
-        char s1[32] = { 0 };
-        char s2[32] = { 0 };
+        int sum_x = _i_sum(new_x);
+        int sum_y = _i_sum(new_y);
 
-        _itoa_s(new_x, s1, 10);
-        int sum_x = Sum(s1);
-
-
-        _itoa_s(new_y, s2, 10);
-        int sum_y = Sum(s2);
-
-        
-        //printf("%d (%s) + %d (%s) = %d <= 25 -> %d\n", sum_x, s1, sum_y, s2, sum_x + sum_y, (sum_x + sum_y) <= 25);
+        //printf("%d (%d) + %d (%d) = %d <= 25 -> %d\n", sum_x, new_x, sum_y, new_y, sum_x + sum_y, (sum_x + sum_y) <= 25);
         if ((sum_x + sum_y) <= 25) {
            
             m_X = new_x;
             m_Y = new_y;
-            new_points.push({m_X, m_Y, false});
+            new_points.push({m_X, m_Y});
             return true;
         }
 
@@ -85,7 +132,9 @@ public :
         m_X = x;
         m_Y = y;
         m_Visited.clear();
-        m_Visited.push_back({ x, y, true });
+        
+        m_Visited[std::make_tuple(x, y)] = true;
+
     }
 
     bool MoveLeft(std::queue<pt>& new_points) {
@@ -120,18 +169,22 @@ public :
         return false;
     }
 
+    // получение новых точек
     void DoMovement(int cached_x, int cached_y, std::queue<pt>& new_points) {
-        m_X = cached_x; m_Y = cached_y;
-        while (MoveRight(new_points));
+
+        // Симуляция во все стороны от посещенной точки
 
         m_X = cached_x; m_Y = cached_y;
-        while (MoveDown(new_points));
+         (MoveRight(new_points));
+
+        m_X = cached_x; m_Y = cached_y;
+         (MoveDown(new_points));
 
          m_X = cached_x; m_Y = cached_y;
-        while (MoveLeft(new_points));
+         (MoveLeft(new_points));
 
         m_X = cached_x; m_Y = cached_y;
-        while (MoveUp(new_points));
+         (MoveUp(new_points));
     }
 
 
@@ -142,7 +195,9 @@ public :
         DoMovement(x, y, start_path);
 
         while (!start_path.empty()) {
-            m_Visited.push_back(start_path.front());
+            auto & _pt = start_path.front();
+            auto _t = std::make_tuple(_pt.x, _pt.y);
+            m_Visited[_t] = false;
             start_path.pop();
         }
         
@@ -155,25 +210,32 @@ public :
             current_index = 0;
             total_size = m_Visited.size();
             for (auto& point : m_Visited) {
-                if (!point.resimulated) {
+                if (!point.second) {
                     
-                    DoMovement(point.x, point.y, new_path);
-                    point.resimulated = true;
+                    int _x = std::get<0>(point.first);
+                    int _y = std::get<1>(point.first);
+
+                    DoMovement(_x, _y, new_path);
+
+                    point.second = true;
                     unscanned--;
-                    //break;
+                    break;
                 }
                 current_index++;
             }
             
-            if (new_path.size())
-                printf("Adding %d points\n", new_path.size());
+           // if (new_path.size())  printf("Adding %d points\n", new_path.size());
 
+            int dup_on = 0;
             while (!new_path.empty()) {
-                m_Visited.push_back(new_path.front());
+                auto & _pt = new_path.front();
+                auto _t = std::make_tuple(_pt.x, _pt.y);
+                m_Visited[_t] = false;
                 new_path.pop();
                 unscanned++;
+                dup_on++;
             }
-
+           // printf("Ok\n");
             //Sleep(1);
         } while (GetUnscanned());
 
@@ -182,11 +244,16 @@ public :
     }
 
     bool GetUnscanned() {
-        int ttl = 0;
-        for (auto& point : m_Visited) {
-            if (!point.resimulated) return true;
-        }
-        return false;
+
+       /* for (auto& point : m_Visited) {
+            if (!point.second) {
+                return true;
+            }
+        }*/
+
+        //return false;
+
+        return unscanned > 0;
     }
 
 };
@@ -205,7 +272,6 @@ DWORD __stdcall Info(LPVOID p) {
 
 int main()
 {
-    std::cout << "Hello World! " << charToInt('1') << std::endl;
 
     C_Ant ant(1000, 1000);
 
