@@ -52,6 +52,7 @@ uint32_t hash(PVOID value) {
 }
 
 
+// для подсчета уникального хеша двух чисел
 struct key_hash : public std::unary_function<key_t, std::size_t>
 {
     std::size_t operator()(const key_t& k) const
@@ -81,19 +82,12 @@ class C_Ant {
 
     bool Visited(int x, int y) {
 
-        //auto entry = m_Visited.find( std::make_tuple(x, y));
-
         auto entry = m_Visited.find(std::make_tuple(x, y));
 
         if (entry != m_Visited.end()) {
-
          //   printf("Visited  %d %d\n", x, y);
          //   printf("Visited with %d %d\n\n", std::get<0>(entry->first), std::get<1>(entry->first));
-
-           // system("pause");
-
             return true;
-
         }
 
         return false;
@@ -224,16 +218,13 @@ public :
                 current_index++;
             }
             
-           // if (new_path.size())  printf("Adding %d points\n", new_path.size());
 
-            int dup_on = 0;
             while (!new_path.empty()) {
                 auto & _pt = new_path.front();
                 auto _t = std::make_tuple(_pt.x, _pt.y);
                 m_Visited[_t] = false;
                 new_path.pop();
                 unscanned++;
-                dup_on++;
             }
            // printf("Ok\n");
             //Sleep(1);
