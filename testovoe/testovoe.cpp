@@ -7,7 +7,8 @@
 #include <tuple>
 
 
-int _i_sum(int n) {
+auto _i_sum = [](int n) -> int
+{
 
     if (!n) return 0;
 
@@ -22,7 +23,7 @@ int _i_sum(int n) {
         n = n / 10;
     }
     return sum;
-}
+};
 
 //for debug output purposes
 int unscanned = 0;
@@ -30,9 +31,9 @@ int current_index = 0;
 int total_size = 0;
 
 
-struct pt {
+typedef struct {
     int x, y;
-};
+} pt_s;
 
 typedef std::tuple<int, int> key_t;
 
@@ -95,7 +96,7 @@ class C_Ant {
 
     
 
-    bool ValidateStep(int new_x, int new_y, std::queue<pt> & new_points) {
+    bool ValidateStep(int new_x, int new_y, std::queue<pt_s> & new_points) {
 
         bool duplicate = Visited(new_x, new_y);
 
@@ -122,16 +123,16 @@ class C_Ant {
     }
 
 public :
-    C_Ant(int x, int y) {
-        m_X = x;
-        m_Y = y;
+    C_Ant() {
+        m_X = 0;
+        m_Y = 0;
         m_Visited.clear();
         
-        m_Visited[std::make_tuple(x, y)] = true;
+        
 
     }
 
-    bool MoveLeft(std::queue<pt>& new_points) {
+    bool MoveLeft(std::queue<pt_s>& new_points) {
         //printf("Moving left\n");
         if (ValidateStep(m_X - 1, m_Y, new_points)) {
             return true;
@@ -139,7 +140,7 @@ public :
         return false;
     }
 
-    bool MoveRight(std::queue<pt>& new_points) {
+    bool MoveRight(std::queue<pt_s>& new_points) {
         //printf("Moving right\n");
         if (ValidateStep(m_X + 1, m_Y, new_points)) {
             return true;
@@ -147,7 +148,7 @@ public :
         return false;
     }
 
-    bool MoveUp(std::queue<pt>& new_points) {
+    bool MoveUp(std::queue<pt_s>& new_points) {
         //printf("Moving up\n");
         if (ValidateStep(m_X, m_Y + 1, new_points)) {
             return true;
@@ -155,7 +156,7 @@ public :
         return false;
     } 
 
-    bool MoveDown(std::queue<pt>& new_points) {
+    bool MoveDown(std::queue<pt_s>& new_points) {
         //printf("Moving down\n");
         if (ValidateStep(m_X, m_Y - 1, new_points)) {
             return true;
@@ -164,7 +165,7 @@ public :
     }
 
     // получение новых точек
-    void DoMovement(int cached_x, int cached_y, std::queue<pt>& new_points) {
+    void DoMovement(int cached_x, int cached_y, std::queue<pt_s>& new_points) {
 
         // Симуляция во все стороны от посещенной точки
 
@@ -185,7 +186,8 @@ public :
 
     void Move(int x, int y) {
        
-        std::queue<pt> start_path;
+        m_Visited[std::make_tuple(x, y)] = true;
+        std::queue<pt_s> start_path;
         DoMovement(x, y, start_path);
 
         while (!start_path.empty()) {
@@ -200,7 +202,7 @@ public :
         unscanned = m_Visited.size() - 1;
 
         do {
-            std::queue<pt> new_path;
+            std::queue<pt_s> new_path;
             current_index = 0;
             total_size = m_Visited.size();
             for (auto& point : m_Visited) {
@@ -211,7 +213,7 @@ public :
 
                     DoMovement(_x, _y, new_path);
 
-                    point.second = true;
+                    point.second = true; // mark as rescanned
                     unscanned--;
                     break;
                 }
@@ -228,22 +230,13 @@ public :
             }
            // printf("Ok\n");
             //Sleep(1);
-        } while (GetUnscanned());
+        } while (AreUnscannedRemaining());
 
         printf("The ant can reach %d points\n", m_Visited.size());
 
     }
 
-    bool GetUnscanned() {
-
-       /* for (auto& point : m_Visited) {
-            if (!point.second) {
-                return true;
-            }
-        }*/
-
-        //return false;
-
+    bool AreUnscannedRemaining() {
         return unscanned > 0;
     }
 
@@ -264,7 +257,7 @@ DWORD __stdcall Info(LPVOID p) {
 int main()
 {
 
-    C_Ant ant(1000, 1000);
+    C_Ant ant;
 
     CreateThread(0, 0, Info, 0, 0, 0);
 
